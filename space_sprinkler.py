@@ -1,4 +1,5 @@
 #This file has functions that helps determine which words are standalone in a word without spaces and separates them
+# Each function on this file uses lower() and returns words in all non caps
 
 #Converts unspaced words to spaced worts using Zipf's law,
 ## THIS PART IS TAKEN FROM https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#11642687
@@ -36,15 +37,15 @@ def infer_spaces(s):
         out.append(s[i-k:i])
         i -= k
 
-    return " ".join(reversed(out))
+    return " ".join(reversed(out)).lower()
 
 ## UP PART IS TAKEN FROM https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#11642687
 
 # Converts snake case to regular words (spaced)
 def sprinkle_on_snake(word):
-    return " ".join(words.split('_'))
+    return " ".join(word.split('_')).lower()
 
 #converts camel case to regular words (spaced)
 import re
 def sprinkle_on_camel(word):
-    return " ".join(re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', word)).split())
+    return " ".join(re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', word)).split()).lower()
