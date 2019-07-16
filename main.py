@@ -13,5 +13,9 @@ links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "ht
 
 from list_of_subreddit_parser import *
 
-subreddits = get_linked_subreddits_from_pages(links)
+subreddits, categories = get_linked_subreddits_from_pages_faster(links)
 print(subreddits)
+print(len(subreddits))
+print()
+print(categories)
+print(len(categories))
