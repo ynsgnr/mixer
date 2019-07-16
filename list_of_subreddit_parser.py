@@ -1,19 +1,26 @@
 #This file parses list of subreddits to dataset of words
-# Link: https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits#wiki_general_content
 
-#Three links with different subreddit links (biggest link i could found, if you can find a bigger list let me know)
-
-#https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits - main thing
-#https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw - nsfw thing
-
-#https://www.reddit.com/r/ListOfSubreddits/wiki/banned - can be used to train for banned reddits but later
-
-
+subreddit_sep = "/r/"
 
 #Return subreddit name from the link
 def get_subreddit_from_link(link):
-    parts = link.split("reddit.com/r/")
+    parts = link.split(subreddit_sep)
     if len(parts) !=2:
         return ""
     parts = parts[1].split("/")
     return parts[0]
+
+#Get all the links from given links
+import httplib2
+from bs4 import BeautifulSoup, SoupStrainer
+
+#this function gets all linked(<a>) subreddits from given array of page links
+def get_linked_subreddits_from_pages(links):
+    subreddits = []
+    for page in links:
+        http = httplib2.Http()
+        status, response = http.request(page)
+        for link in BeautifulSoup(response, parse_only=SoupStrainer("a")):
+            if link.has_attr("href") and subreddit_sep in link["href"]:
+                subreddits.append(get_subreddit_from_link(link["href"]))
+    return subreddits
