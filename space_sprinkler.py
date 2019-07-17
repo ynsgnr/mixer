@@ -41,6 +41,39 @@ def infer_spaces(s):
 
 ## UP PART IS TAKEN FROM https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#11642687
 
+from collections import Counter 
+from heapq import merge
+
+freq_list = []
+counter = dict()
+
+def merge_dict_by_adding(d1,d2):
+    for k in d2:
+        if k in d1:
+            d1[k]+=d2[k]
+        else:
+            d1[k]=d2[k]
+    return d1
+
+def update_costs():
+    global freq_list
+    global wordcost
+    global counter
+    freq_list = [x[0] for x in sorted(counter.items(), key=lambda kv: kv[1], reverse=True)]
+    for i,w in enumerate(freq_list):
+        #TODO determine if we need to change it if exits
+        wordcost[w]=log(i+3)*log(len(freq_list)+2)
+
+def add_words(word_list):
+    global counter
+    merge_dict_by_adding(counter,Counter(word_list))
+    update_costs()
+
+def add_single_word(word):
+    global counter
+    merge_dict_by_adding(counter,{word:1})
+    update_costs()
+
 # Converts snake case to regular words (spaced)
 def sprinkle_on_snake(word):
     return " ".join(word.split('_')).lower()
