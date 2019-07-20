@@ -120,6 +120,30 @@ SVM.fit(Train_X_Tfidf,Train_Y)# predict the labels on validation dataset
 predictions_SVM = SVM.predict(Test_X_Tfidf)# Use accuracy_score function to get the accuracy
 print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
 
+# gs_clf
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
+
+from sklearn.pipeline import Pipeline
+text_clf = Pipeline([('vect', CountVectorizer()),
+                        ('tfidf', TfidfTransformer()),
+                        ('clf', naive_bayes.MultinomialNB()),
+                    ])
+text_clf = text_clf.fit(train, Train_Y)
+
+from sklearn.model_selection import GridSearchCV
+parameters = {'vect__ngram_range': [(1, 1), (1, 2)],
+                'tfidf__use_idf': (True, False),
+                'clf__alpha': (1e-2, 1e-3),
+            }
+
+gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+gs_clf = gs_clf.fit(train, Train_Y)
+
+print("gs_clf scores:")
+print(gs_clf.best_score_)
+print(gs_clf.best_params_)
+
 #Word2Vec
 from gensim.models import Word2Vec
 
