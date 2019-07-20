@@ -43,19 +43,34 @@ def get_linked_subreddits_from_pages(links):
 
 forbidden = [""," ",".  ","ListOfSubreddits","all"]
 
+levels = ["h1","h2","h3"]
+
 def get_linked_subreddits_from_pages_faster(links):
     subreddits = []
     categories = []
+    big_categories = []
     for page in links:
         http = httplib2.Http()
         status, response = http.request(page)
         bs = BeautifulSoup(response)
         for link in bs.find_all("a"):
             if link.has_attr("href") and subreddit_sep in link["href"]:
+                cats = []
                 sub = get_subreddit_from_link(link["href"])
+
+                #Get all the categories
                 cat = link.parent.previous_element.previous_element
+                bcat = cat.parent.parent
+                if bcat.name == "h3":
+                    cats.append(bcat.text)
+                    bcat = bcat.find_previous_sibling("h2")
+                if bcat.name == "h2":
+                    cats.append(bcat.text)
+                    bcat = bcat.find_previous_sibling("h1")
+                cats.append(bcat.text)
+
                 if hasattr(cat, 'text'): cat = cat.text
                 if not "<" in sub and not sub in forbidden and not "<" in cat and not "\n" in cat and not cat in forbidden:
                     subreddits.append(sub)
-                    categories.append(cat)
+                    categories.append(cats)
     return subreddits, categories
