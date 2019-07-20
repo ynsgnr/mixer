@@ -101,14 +101,14 @@ def simple_sprinkle_on_subreddits(subreddits):
 
 def sprinkle_on_subreddits(subreddits):
     #Get word from snake and camel cased subreddits first
-    simple_sprinkle_on_subreddits(subreddits)
+    srs = subreddits.copy()
+    srs = simple_sprinkle_on_subreddits(srs)
     
-    for i,subreddit in enumerate(subreddits):
+    for i,subreddit in enumerate(srs):
         if not " " in subreddit:
             w = infer_spaces(subreddit)
-            #add_words(w.split(" "))
-            subreddits[i] = w
+            srs[i] = w
     
-    return subreddits
+    return srs
         
 
