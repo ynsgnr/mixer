@@ -61,8 +61,8 @@ def update_costs():
     global counter
     freq_list = [x[0] for x in sorted(counter.items(), key=lambda kv: kv[1], reverse=True)]
     for i,w in enumerate(freq_list):
-        #TODO determine if we need to change it if exits
-        wordcost[w]=log(i+3)*log(len(freq_list)+2)
+        if not w in wordcost:
+            wordcost[w]=log(i+3)*log(len(freq_list)+2)
 
 def add_words(word_list):
     global counter
@@ -82,3 +82,33 @@ def sprinkle_on_snake(word):
 import re
 def sprinkle_on_camel(word):
     return " ".join(re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', word)).split()).lower()
+
+def simple_sprinkle_on_subreddits(subreddits):
+    # We can get new words from subreddit names with camel and snake cases
+    # So we can get a more accurute inter spaces
+    simpleSubs = [] #Words in subreddit names with camel or snake case
+
+    for i,subreddit in enumerate(subreddits):
+        word = sprinkle_on_camel(subreddit)
+        word = sprinkle_on_snake(word)
+        #If the word changed we found a new subreddit with poosible new words
+        #So lets add them to the list
+        if not word == subreddit:
+            simpleSubs += word.split(" ")
+            subreddits[i] = word
+    add_words(simpleSubs)
+    return subreddits
+
+def sprinkle_on_subreddits(subreddits):
+    #Get word from snake and camel cased subreddits first
+    simple_sprinkle_on_subreddits(subreddits)
+    
+    for i,subreddit in enumerate(subreddits):
+        if not " " in subreddit:
+            w = infer_spaces(subreddit)
+            #add_words(w.split(" "))
+            subreddits[i] = w
+    
+    return subreddits
+        
+
