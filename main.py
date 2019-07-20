@@ -9,13 +9,27 @@
 
 #https://www.reddit.com/r/ListOfSubreddits/wiki/banned - can be used to train for banned reddits but later
 
-links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
-
 from list_of_subreddit_parser import *
+from space_sprinkler import *
 
-subreddits, categories = get_linked_subreddits_from_pages_faster(links)
-print(subreddits)
-print(len(subreddits))
-print()
-print(categories)
-print(len(categories))
+def get_spaced_subreddits():
+    links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
+
+    subreddits, categories = get_linked_subreddits_from_pages_faster(links)
+
+    sprinkled_subs = sprinkle_on_subreddits(subreddits)
+
+    return sprinkled_subs, subreddits, categories
+
+
+sprinkled_subs, subreddits, categories = get_spaced_subreddits()
+
+categories_dict = {}
+categories_dict_subs = {}
+for i,category in enumerate(categories):
+    if not category[-1] in categories_dict:
+        categories_dict[category[-1]]=1
+        categories_dict_subs[category[-1]]=[subreddits[i]]
+    else:
+        categories_dict[category[-1]]+=1
+        categories_dict_subs[category[-1]].append(subreddits[i])
