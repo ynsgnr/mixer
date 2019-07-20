@@ -43,7 +43,7 @@ def get_linked_subreddits_from_pages(links):
 
 forbidden = [""," ",".  ","ListOfSubreddits","all"]
 
-levels = ["h1","h2","h3"]
+levels = ["h5","h4","h3","h2","h1"]
 
 def get_linked_subreddits_from_pages_faster(links):
     subreddits = []
@@ -59,17 +59,28 @@ def get_linked_subreddits_from_pages_faster(links):
                 sub = get_subreddit_from_link(link["href"])
 
                 #Get all the categories
-                cat = link.parent.previous_element.previous_element
-                bcat = cat.parent.parent
-                if bcat.name == "h3":
-                    cats.append(bcat.text)
-                    bcat = bcat.find_previous_sibling("h2")
-                if bcat.name == "h2":
-                    cats.append(bcat.text)
-                    bcat = bcat.find_previous_sibling("h1")
-                cats.append(bcat.text)
-
+                cat = link.parent.find_previous_sibling(levels)
+                if cat is None:
+                    cat = link.parent.previous_element.previous_element
+                    bcat = cat.parent.parent
+                else:
+                    bcat = cat
+                
                 if hasattr(cat, 'text'): cat = cat.text
+
+                for i,level in enumerate(levels[0:-1]):
+                    if bcat.name == level:
+                        cats.append(bcat.text)
+                        bcat = bcat.find_previous_sibling(levels[i+1])
+                if bcat.name in levels and not bcat.text == cat:
+                    cats.append(bcat.text)
+                
+                if len(cats)==0:
+                    cats.append(cat)
+
+                if page == "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw":
+                    cats.append("NSFW")
+
                 if not "<" in sub and not sub in forbidden and not "<" in cat and not "\n" in cat and not cat in forbidden:
                     subreddits.append(sub)
                     categories.append(cats)
