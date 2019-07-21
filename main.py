@@ -65,6 +65,19 @@ categories = list(c)
 subreddits = list(s)
 sprinkled_subs = list(ss)
 
+from nltk.stem import PorterStemmer
+from nltk.tokenize import sent_tokenize, word_tokenize
+ps = PorterStemmer()
+
+stemmed_subs = []
+for sub in sprinkled_subs:
+    stemmed_sub = ""
+    for word in word_tokenize(sub):
+        stemmed_sub+=" "+ps.stem(word)
+    stemmed_subs.append(stemmed_sub[1:])
+
+sprinkled_subs = stemmed_subs
+
 categories_dict, categories_dict_subs = get_categorized(categories)
 
 '''
@@ -120,7 +133,7 @@ SVM.fit(Train_X_Tfidf,Train_Y)# predict the labels on validation dataset
 predictions_SVM = SVM.predict(Test_X_Tfidf)# Use accuracy_score function to get the accuracy
 print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
 
-# gs_clf
+# gs_clf_bayes
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -140,9 +153,33 @@ parameters = {'vect__ngram_range': [(1, 1), (1, 2)],
 gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
 gs_clf = gs_clf.fit(train, Train_Y)
 
-print("gs_clf scores:")
+print("gs_clf_bayes scores:")
 print(gs_clf.best_score_)
 print(gs_clf.best_params_)
+
+#gs_clf_svm
+from sklearn.linear_model import SGDClassifier
+import numpy as np
+text_clf_svm = Pipeline([('vect', CountVectorizer()),
+                            ('tfidf', TfidfTransformer()),
+                            ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',
+                            alpha=1e-3, random_state=random_state)),
+                        ])
+text_clf_svm.fit(train, Train_Y)
+predicted_svm = text_clf_svm.predict(test)
+print(np.mean(predicted_svm == Test_Y))
+
+parameters_svm = {'vect__ngram_range': [(1, 1), (1, 2)],
+                   'tfidf__use_idf': (True, False),
+                   'clf-svm__alpha': (1e-2, 1e-3),
+                 }
+gs_clf_svm = GridSearchCV(text_clf_svm, parameters_svm, n_jobs=-1)
+gs_clf_svm = gs_clf_svm.fit(train, Train_Y)
+
+print("gs_clf_svm scores:")
+print(gs_clf_svm.best_score_)
+print(gs_clf_svm.best_params_)
+
 
 #Word2Vec
 from gensim.models import Word2Vec
@@ -156,7 +193,7 @@ import en_core_web_md
 
 nlp = en_core_web_md.load()
 #Split %50 and use everyword as keyword
-train, test, Train_Y, Test_Y = train_test_split(sprinkled_subs, [c[-1] for c in categories], test_size=0.1, random_state=random_state, stratify=[c[-1] for c in categories])
+#train, test, Train_Y, Test_Y = train_test_split(sprinkled_subs, [c[-1] for c in categories], test_size=0.1, random_state=random_state, stratify=[c[-1] for c in categories])
 
 import itertools
 import numpy as np
