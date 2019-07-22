@@ -11,7 +11,7 @@
 
 random_state = 215
 
-from list_of_subreddit_parser import *
+from web_parser import *
 from space_sprinkler import *
 
 def get_spaced_subreddits():
@@ -64,6 +64,15 @@ c, s, ss = zip(*filtered)
 categories = list(c)
 subreddits = list(s)
 sprinkled_subs = list(ss)
+
+subs_sentences = [" "] * len(subreddits)
+for i,sentence in enumerate(sprinkled_subs):
+    desc, real_sub_name = get_description(subreddits[i])
+    if not subreddits[i] == real_sub_name:
+        sentence = sprinkle_on_subreddits([real_sub_name])[0]
+    subs_sentences[i] = sentence + " " + desc
+
+sprinkled_subs = subs_sentences
 
 from nltk.stem import PorterStemmer
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -229,4 +238,4 @@ for i,idx in enumerate(topic_idx):
     if  categories[idx][-1]==Test_Y[i]:
         correct+=1
 print("Accuracy on test:")
-print(correct/len(test))
+print(correct/len(test))    

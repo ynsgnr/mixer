@@ -101,12 +101,35 @@ title_prev = "r/"
 def subreddit_to_link(sub):
     return reddit_link+sub
 
+import requests
 def get_description(sub):
     sub_name = clear_subreddit(sub)
     link = subreddit_to_link(sub_name)
     http = httplib2.Http()
-    status, response = http.request(link)
-    bs = BeautifulSoup(response)
-    detail_title = bs.find("span",attrs={"title":title_prev+sub_name})
-    return detail_title.parent.parent.parent.find(attrs={"data-redditstyle":"true"}).text.
+    cookie = {
+        "over18":"1"
+    }
+    response = requests.get(link,cookies=cookie)
+    bs = BeautifulSoup(response.text)
+    detail_titles = bs.findAll("span")
+    real_sub_name = sub_name
+    detail_title = None
+    desc = ""
+    for dt in detail_titles:
+        if dt.has_attr('title'):
+            detail_title = dt.parent
+            real_sub_name = dt.text
+    try:
+        desc = detail_title.parent.parent.find(attrs={"data-redditstyle":"true"}).text
+    except:
+        print(detail_title)
+        print(sub)
+        print(real_sub_name)
+        if not (detail_title is None):
+            print(detail_title.parent)
+            if not (detail_title.parent is None):
+                print(detail_title.parent.parent)
+                if not (detail_title.parent.parent is None):
+                    print(detail_title.parent.parent.find(attrs={"data-redditstyle":"true"}))
+    return desc, real_sub_name
     
