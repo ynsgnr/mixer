@@ -85,3 +85,28 @@ def get_linked_subreddits_from_pages_faster(links):
                     subreddits.append(sub)
                     categories.append(cats)
     return subreddits, categories
+
+def clear_subreddit(sub):
+    if "/" in sub :
+        w = sub.split("/")
+        if "r" in sub:
+            return w[w.index("r")+1]
+        else:
+            for s in w:
+                if len(s)>0: return s
+    return sub
+
+reddit_link = "https://www.reddit.com/r/"
+title_prev = "r/"
+def subreddit_to_link(sub):
+    return reddit_link+sub
+
+def get_description(sub):
+    sub_name = clear_subreddit(sub)
+    link = subreddit_to_link(sub_name)
+    http = httplib2.Http()
+    status, response = http.request(link)
+    bs = BeautifulSoup(response)
+    detail_title = bs.find("span",attrs={"title":title_prev+sub_name})
+    return detail_title.parent.parent.parent.find(attrs={"data-redditstyle":"true"}).text.
+    
