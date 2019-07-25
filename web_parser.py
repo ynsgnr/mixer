@@ -101,16 +101,26 @@ title_prev = "r/"
 def subreddit_to_link(sub):
     return reddit_link+sub
 
-import requests
+def add_cookie(cookies,cookie_to_add):
+    splited = cookies.split("secure")
+    splited[-2]+=cookie_to_add
+    return "secure".join(splited)
+
+first_request = True
+headers = {}
+# import requests
 def get_description(sub):
+    global headers
+    global first_request
     sub_name = clear_subreddit(sub)
     link = subreddit_to_link(sub_name)
     http = httplib2.Http()
-    cookie = {
-        "over18":"1"
-    }
-    response = requests.get(link,cookies=cookie)
-    bs = BeautifulSoup(response.text)
+    if first_request:
+        first_request = False
+        status, response = http.request(link)
+        headers = {'Cookie': add_cookie(status['set-cookie'],"over18=1; ") }
+    status, response = http.request(link,'GET',headers=headers)
+    bs = BeautifulSoup(response)
     detail_titles = bs.findAll("span")
     real_sub_name = sub_name
     detail_title = None
@@ -133,3 +143,7 @@ def get_description(sub):
                     print(detail_title.parent.parent.find(attrs={"data-redditstyle":"true"}))
     return desc, real_sub_name
     
+
+def write_to_file(path,str):
+    with open(path, 'w') as the_file:
+        the_file.write(str)
