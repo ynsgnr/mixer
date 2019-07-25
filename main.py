@@ -69,7 +69,7 @@ subs_sentences = [" "] * len(subreddits)
 for i,sentence in enumerate(sprinkled_subs):
     desc, real_sub_name = get_description(subreddits[i])
     if not subreddits[i] == real_sub_name:
-        sentence = sprinkle_on_subreddits([real_sub_name])[0]
+        sentence = sprinkle_on_subreddits([real_sub_name.split("/")[-1]])[0]
     subs_sentences[i] = sentence + " " + desc
 
 sprinkled_subs = subs_sentences
