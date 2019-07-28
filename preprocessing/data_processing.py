@@ -1,7 +1,6 @@
 
 from preprocessing.space_sprinkler import *
 from preprocessing.data2disk import *
-from preprocessing.tokenizer import *
 from preprocessing.web_parser import *
 
 def get_spaced_subreddits(links):
@@ -45,6 +44,9 @@ def get_descriptions(subreddits,sprinkled_subs):
 def get_data(stemmed_data_path,data_path,links):
     #Get necessary data from file if possible
     #If file doesnt exists construct data from links
+
+    from preprocessing.tokenizer import stem_subs
+
     sprinkled_subs,categories = load_data(stemmed_data_path)
     if sprinkled_subs is None:
         sprinkled_subs,categories = load_data(data_path)

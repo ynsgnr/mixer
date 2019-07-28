@@ -9,8 +9,11 @@ except:
     from nltk.tokenize import sent_tokenize, word_tokenize
 
 
-def tokenize_categories(categories):
+def tokenize_categories(categories,categories_dict=None):
     #Tokenize categories
+    from preprocessing.data_processing import get_categorized
+    if categories_dict is None:
+        categories_dict , _ = get_categorized(categories)
     categories_token = {}
     token_categories = {}
     i = 0

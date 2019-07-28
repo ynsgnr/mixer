@@ -3,7 +3,7 @@ from sklearn import model_selection, svm
 
 random_state = 42
 
-class SVM_classfier:
+class SVM_classifier:
     # Classifier - Algorithm - SVM
     # fit the training dataset on the classifier
     SVM = svm.SVC(C=1.0, kernel='linear', degree=3, gamma='auto')

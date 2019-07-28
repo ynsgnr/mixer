@@ -19,5 +19,7 @@ def load_data(p):
         path = p+'.csv'
     if not os.path.exists(path):
         return None,None
-    df = pd.read_csv(path)
-    return df[SPINKLED_SUB_KEY], df[CATEGORIES_KEY]
+    df = pd.read_csv(path, sep='\t', header=None)
+    #File has three columns: id,sprinkled_subs,categories
+    #Get sprinkled subs on second column and remove header
+    return df[1][1:].values, [n.replace("'","")[1:-1].split(",") for n in df[2][1:].values]

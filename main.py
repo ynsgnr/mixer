@@ -53,7 +53,7 @@ predictions_NB = nbp.predict(test)
 print("gs_clf_nb scores:")
 print(np.mean(predictions_NB == Test_Y))
 print(gs_clf_nb.best_score_)
-print(gs_clf_nb.clf.best_params_)
+print(gs_clf_nb.best_params_)
 
 svmp = SVM_pipelined()
 gs_clf_svm = svmp.fit(train,Train_Y)

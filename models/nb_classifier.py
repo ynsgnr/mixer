@@ -4,7 +4,7 @@ class NB_classifier:
 
     nb = naive_bayes.MultinomialNB()
 
-    def train(self,train_tfidf,y):
+    def fit(self,train_tfidf,y):
         # fit the training dataset on the NB classifier
         self.nb.fit(train_tfidf,y)# predict the labels on validation dataset
 
