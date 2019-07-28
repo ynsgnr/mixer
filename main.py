@@ -20,48 +20,66 @@ from models.svm_classifier import *
 links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
 data_path = "sprinkled_subs"
 stemmed_data_path = "sprinkled_subs_stemmed"
+NB_pipelined_path = "nb"
 
-sprinkled_subs,categories = get_data(stemmed_data_path,data_path,links)
-categories_dict, categories_dict_subs = get_categorized(categories)
-tokenized_categories, token_categories = tokenize_categories(categories)
 
-from sklearn.model_selection import train_test_split
+def train_with_test():
+  sprinkled_subs,categories = get_data(stemmed_data_path,data_path,links)
+  categories_dict, categories_dict_subs = get_categorized(categories)
+  tokenized_categories, token_categories = tokenize_categories(categories)
 
-train, test, Train_Y, Test_Y = train_test_split(sprinkled_subs, tokenized_categories, test_size=0.1, random_state=random_state, stratify=tokenized_categories)
+  from sklearn.model_selection import train_test_split
 
-tfidf = get_tfdif(sprinkled_subs)
-train_tfidf = tfidf.transform(train)
-test_tfidf = tfidf.transform(test)
+  train, test, Train_Y, Test_Y = train_test_split(sprinkled_subs, tokenized_categories, test_size=0.1, random_state=random_state, stratify=tokenized_categories)
 
-from sklearn.metrics import accuracy_score
-import numpy as np
+  tfidf = get_tfdif(sprinkled_subs)
+  train_tfidf = tfidf.transform(train)
+  test_tfidf = tfidf.transform(test)
 
-nb = NB_classifier()
-nb.fit(train_tfidf,Train_Y)
-predictions_NB = nb.predict(test_tfidf)
-print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, Test_Y)*100)
+  from sklearn.metrics import accuracy_score
+  import numpy as np
 
-svm = SVM_classifier()
-svm.fit(train_tfidf,Train_Y)
-predictions_SVM = svm.predict(test_tfidf)
-print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
+  nb = NB_classifier()
+  nb.fit(train_tfidf,Train_Y)
+  predictions_NB = nb.predict(test_tfidf)
+  print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, Test_Y)*100)
 
-nbp = NB_pipelined()
-gs_clf_nb = nbp.fit(train,Train_Y)
-predictions_NB = nbp.predict(test)
+  svm = SVM_classifier()
+  svm.fit(train_tfidf,Train_Y)
+  predictions_SVM = svm.predict(test_tfidf)
+  print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
 
-print("gs_clf_nb scores:")
-print(np.mean(predictions_NB == Test_Y))
-print(gs_clf_nb.best_score_)
-print(gs_clf_nb.best_params_)
+  nbp = NB_pipelined()
+  gs_clf_nb = nbp.fit(train,Train_Y)
+  predictions_NB = nbp.predict(test)
+  nbp.save(NB_pipelined_path)
 
-svmp = SVM_pipelined()
-gs_clf_svm = svmp.fit(train,Train_Y)
-predicted_svm = svmp.predict_svm(test)
-predicted_svm2 = svmp.predict(test)
+  print("gs_clf_nb scores:")
+  print(np.mean(predictions_NB == Test_Y))
+  print(gs_clf_nb.best_score_)
+  print(gs_clf_nb.best_params_)
 
-print("gs_clf_svm scores:")
-print(np.mean(predicted_svm == Test_Y))
-print(np.mean(predicted_svm2 == Test_Y))
-print(gs_clf_svm.best_score_)
-print(gs_clf_svm.best_params_)
+  svmp = SVM_pipelined()
+  gs_clf_svm = svmp.fit(train,Train_Y)
+  predicted_svm = svmp.predict_svm(test)
+  predicted_svm2 = svmp.predict(test)
+
+  print("gs_clf_svm scores:")
+  print(np.mean(predicted_svm == Test_Y))
+  print(np.mean(predicted_svm2 == Test_Y))
+  print(gs_clf_svm.best_score_)
+  print(gs_clf_svm.best_params_)
+
+def train_nbp():
+  sprinkled_subs,categories = get_data(stemmed_data_path,data_path,links)
+  categories_dict, categories_dict_subs = get_categorized(categories)
+  tokenized_categories, token_categories = tokenize_categories(categories)
+  nbp = NB_pipelined()
+  gs_clf_nb = nbp.fit(sprinkled_subs,tokenized_categories)
+  nbp.save(NB_pipelined_path)
+
+try:
+  classifier = NB_pipelined()
+  classifier.load(NB_pipelined_path)
+except:
+   train_nbp()

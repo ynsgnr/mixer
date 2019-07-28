@@ -15,6 +15,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
+import pickle
 # gs_clf_bayes
 class NB_pipelined:
 
@@ -37,3 +38,19 @@ class NB_pipelined:
     
     def predict(self,x):
         return self.gs_clf.predict(x)
+
+    def save(self,p):
+        if not '.pk1' in p:
+            path = p+'.pk1'
+        else:
+            path = p
+        with open(path, 'wb') as output:
+            pickle.dump(self.gs_clf, output, pickle.HIGHEST_PROTOCOL)
+    
+    def load(self,p):
+        if not '.pk1' in p:
+            path = p+'.pk1'
+        else:
+            path = p
+        with open(path, 'rb') as input:
+            self.gs_clf = pickle.load(input)
