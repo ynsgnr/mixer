@@ -11,237 +11,61 @@
 
 random_state = 215
 
-from web_parser import *
-from space_sprinkler import *
+from preprocessing.data_processing import *
+from preprocessing.tokenizer import *
+from models.word2vec import *
+from models.nb_classifier import *
+from models.svm_classifier import *
 
-import pandas as pd
-import h5py
-import os
-
-def get_spaced_subreddits():
-    links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
-
-    subreddits, categories = get_linked_subreddits_from_pages_faster(links)
-
-    sprinkled_subs = sprinkle_on_subreddits(subreddits)
-
-    return sprinkled_subs, subreddits, categories
-
-def get_categorized(categories):
-    categories_dict = {}
-    categories_dict_subs = {}
-    for i,category in enumerate(categories):
-        if not category[-1] in categories_dict:
-            categories_dict[category[-1]]=1
-            categories_dict_subs[category[-1]]=[i]
-        else:
-            categories_dict[category[-1]]+=1
-            categories_dict_subs[category[-1]].append(i)
-    return categories_dict, categories_dict_subs
-
-def tokenize_categories(categories):
-    #Tokenize categories
-    categories_token = {}
-    token_categories = {}
-    i = 0
-    for key in categories_dict:
-        categories_token[key]=i
-        token_categories[i]=key
-        i+=1
-
-    tokenized_categories = [0]*len(categories)
-    for i, cat in enumerate(categories):
-        tokenized_categories[i]=categories_token[cat[-1]]
-    return tokenized_categories, token_categories
-
-def remove_categories(cats_to_remove,categories,subreddits,sprinkled_subs):
-    #remove Ex50k+ category
-    filtered = (
-        (cat, sub, sp_sub) 
-            for cat, sub, sp_sub in zip(categories, subreddits, sprinkled_subs) 
-                if not cat[-1] in cats_to_remove)
-
-    c, s, ss = zip(*filtered)
-    return list(c),list(s),list(ss)
-
-def get_descriptions(subreddits,sprinkled_subs):
-    subs_sentences = [" "] * len(subreddits)
-    for i,sentence in enumerate(sprinkled_subs):
-        desc, real_sub_name = get_description(subreddits[i])
-        if not subreddits[i] == real_sub_name:
-            sentence = sprinkle_on_subreddits([real_sub_name.split("/")[-1]])[0]
-        subs_sentences[i] = sentence + " " + desc
-    return subs_sentences
-
-def stem_subs(sprinkled_subs):
-    from nltk.stem import PorterStemmer
-    from nltk.tokenize import sent_tokenize, word_tokenize
-    ps = PorterStemmer()
-    stemmed_subs = []
-    for sub in sprinkled_subs:
-        stemmed_sub = ""
-        for word in word_tokenize(sub):
-            stemmed_sub+=" "+ps.stem(word)
-        stemmed_subs.append(stemmed_sub[1:])
-    return stemmed_subs
-
-SPINKLED_SUB_KEY = 'sprinkled_subs'
-CATEGORIES_KEY = 'categories'
-
-def save_data(path,sprinkled_subs,categories):
-    df = pd.DataFrame({
-        SPINKLED_SUB_KEY:sprinkled_subs,
-        CATEGORIES_KEY:categories
-    })
-    '''
-    h5File = h5py.File(path+'.h5','w')
-    h5File[SPINKLED_SUB_KEY] = df[SPINKLED_SUB_KEY]
-    h5File[CATEGORIES_KEY] = df[CATEGORIES_KEY]
-    h5File.close()
-    ''''
-    df.to_csv(path+'.csv', sep='\t')
-
-def load_data(p):
-    #Looks for file with h5 extension
-    # path = p+'.h5'
-    path = p+'.csv'
-    if not os.path.exists(path):
-        return None,None
-    '''
-    h5File = h5py.File(path, 'r')
-    r = list(h5File[SPINKLED_SUB_KEY]),list(h5File[CATEGORIES_KEY])
-    h5File.close()
-    return r
-    ''''
-    df = pd.read_csv(path)
-
+links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
 data_path = "sprinkled_subs"
 stemmed_data_path = "sprinkled_subs_stemmed"
 
-#Get necessary data from file if possible
-#If file doesnt exist construct data
-sprinkled_subs,categories = load_data(stemmed_data_path)
-if sprinkled_subs is None:
-    sprinkled_subs,categories = load_data(data_path)
-    if sprinkled_subs is None:
-        #Get Data
-        sprinkled_subs, subreddits, categories = get_spaced_subreddits()
-        categories, subreddits, sprinkled_subs = remove_categories(["Ex 50k+"],categories,subreddits,sprinkled_subs)
-        sprinkled_subs = get_descriptions(subreddits,sprinkled_subs)
-        save_data(data_path,sprinkled_subs,categories)
-
-    #Stem sub
-    sprinkled_subs = stem_subs(sprinkled_subs)
-    save_data(stemmed_data_path,sprinkled_subs,categories)
-
+sprinkled_subs,categories = get_data(stemmed_data_path,data_path,links)
 categories_dict, categories_dict_subs = get_categorized(categories)
-
-'''
-#get detailed categories for other
-for subreddit_i in categories_dict_subs['Other']:
-    categories[subreddit_i]=categories[subreddit_i][0:-1]
-categories_dict, categories_dict_subs = get_categorized(categories)
-'''
-
-# build all words dictonary for dataset
-all_words = {}
-for subreddit in sprinkled_subs:
-    for word in subreddit.split(" "):
-        if not word in all_words:
-            all_words[word]=1
-        else:
-            all_words[word]+=1
-
-# change it to array of arrays for word2vec
-sprinkled_subs_array = sprinkled_subs.copy()
-for i,sub in enumerate(sprinkled_subs_array):
-    sprinkled_subs_array[i]=sub.split(" ")
-            
 tokenized_categories, token_categories = tokenize_categories(categories)
 
 from sklearn.model_selection import train_test_split
 
 train, test, Train_Y, Test_Y = train_test_split(sprinkled_subs, tokenized_categories, test_size=0.1, random_state=random_state, stratify=tokenized_categories)
 
+tfidf = get_tfdif(sprinkled_subs)
+train_tfidf = tfidf.transform(train)
+test_tfidf = tfidf.transform(test)
 
-#TF-IDF Scheme
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-Tfidf_vect = TfidfVectorizer(max_features=5000)
-Tfidf_vect.fit(sprinkled_subs)
-Train_X_Tfidf = Tfidf_vect.transform(train)
-Test_X_Tfidf = Tfidf_vect.transform(test)
-
-from sklearn import model_selection, naive_bayes, svm
 from sklearn.metrics import accuracy_score
+import numpy as np
 
-# fit the training dataset on the NB classifier
-Naive = naive_bayes.MultinomialNB()
-Naive.fit(Train_X_Tfidf,Train_Y)# predict the labels on validation dataset
-predictions_NB = Naive.predict(Test_X_Tfidf)# Use accuracy_score function to get the accuracy
+nb = NB_classifier()
+nb.fit(train_tfidf,Train_Y)
+predictions_NB = nb.predict(test_tfidf)
 print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, Test_Y)*100)
 
-# Classifier - Algorithm - SVM
-# fit the training dataset on the classifier
-SVM = svm.SVC(C=1.0, kernel='linear', degree=3, gamma='auto')
-SVM.fit(Train_X_Tfidf,Train_Y)# predict the labels on validation dataset
-predictions_SVM = SVM.predict(Test_X_Tfidf)# Use accuracy_score function to get the accuracy
+svm = SVM_classifier()
+svm.fit(train_tfidf,Train_Y)
+predictions_SVM = svm.predict(test_tfidf)
 print("SVM Accuracy Score -> ",accuracy_score(predictions_SVM, Test_Y)*100)
 
-# gs_clf_bayes
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.feature_extraction.text import CountVectorizer
+nbp = NB_pipelined()
+gs_clf_nb = nbp.fit(train,Train_Y)
+predictions_NB = nbp.predict(test)
 
-from sklearn.pipeline import Pipeline
-text_clf = Pipeline([('vect', CountVectorizer()),
-                        ('tfidf', TfidfTransformer()),
-                        ('clf', naive_bayes.MultinomialNB()),
-                    ])
-text_clf = text_clf.fit(train, Train_Y)
+print("gs_clf_nb scores:")
+print(np.mean(predictions_NB == Test_Y))
+print(gs_clf_nb.best_score_)
+print(gs_clf_nb.clf.best_params_)
 
-from sklearn.model_selection import GridSearchCV
-parameters = {'vect__ngram_range': [(1, 1), (1, 2)],
-                'tfidf__use_idf': (True, False),
-                'clf__alpha': (1e-2, 1e-3),
-            }
-
-gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
-gs_clf = gs_clf.fit(train, Train_Y)
-
-print("gs_clf_bayes scores:")
-print(gs_clf.best_score_)
-print(gs_clf.best_params_)
-
-#gs_clf_svm
-from sklearn.linear_model import SGDClassifier
-import numpy as np
-text_clf_svm = Pipeline([('vect', CountVectorizer()),
-                            ('tfidf', TfidfTransformer()),
-                            ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',
-                            alpha=1e-3, random_state=random_state)),
-                        ])
-text_clf_svm.fit(train, Train_Y)
-predicted_svm = text_clf_svm.predict(test)
-print(np.mean(predicted_svm == Test_Y))
-
-parameters_svm = {'vect__ngram_range': [(1, 1), (1, 2)],
-                   'tfidf__use_idf': (True, False),
-                   'clf-svm__alpha': (1e-2, 1e-3),
-                 }
-gs_clf_svm = GridSearchCV(text_clf_svm, parameters_svm, n_jobs=-1)
-gs_clf_svm = gs_clf_svm.fit(train, Train_Y)
+svmp = SVM_pipelined()
+gs_clf_svm = svmp.fit(train,Train_Y)
+predicted_svm = svmp.predict_svm(test)
+predicted_svm2 = svmp.predict(test)
 
 print("gs_clf_svm scores:")
+print(np.mean(predicted_svm == Test_Y))
+print(np.mean(predicted_svm2 == Test_Y))
 print(gs_clf_svm.best_score_)
 print(gs_clf_svm.best_params_)
 
-
-#Word2Vec
-from gensim.models import Word2Vec
-
-model = Word2Vec(sprinkled_subs_array, min_count=1)
-model.train(sprinkled_subs_array,epochs = 10,total_examples=len(sprinkled_subs_array))
 
 #  https://engineering.reviewtrackers.com/using-word2vec-to-classify-review-keywords-a5fa50ce05dc
 import spacy
