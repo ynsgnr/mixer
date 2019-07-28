@@ -14,6 +14,10 @@ random_state = 215
 from web_parser import *
 from space_sprinkler import *
 
+import pandas as pd
+import h5py
+import os
+
 def get_spaced_subreddits():
     links = ["https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits" , "https://www.reddit.com/r/ListOfSubreddits/wiki/nsfw"]
 
@@ -50,42 +54,85 @@ def tokenize_categories(categories):
         tokenized_categories[i]=categories_token[cat[-1]]
     return tokenized_categories, token_categories
 
-sprinkled_subs, subreddits, categories = get_spaced_subreddits()
+def remove_categories(cats_to_remove,categories,subreddits,sprinkled_subs):
+    #remove Ex50k+ category
+    filtered = (
+        (cat, sub, sp_sub) 
+            for cat, sub, sp_sub in zip(categories, subreddits, sprinkled_subs) 
+                if not cat[-1] in cats_to_remove)
 
-#remove Ex50k+ category
-cats_to_remove = ["Ex 50k+"]
-filtered = (
-    (cat, sub, sp_sub) 
-        for cat, sub, sp_sub in zip(categories, subreddits, sprinkled_subs) 
-            if not cat[-1] in cats_to_remove)
+    c, s, ss = zip(*filtered)
+    return list(c),list(s),list(ss)
 
-c, s, ss = zip(*filtered)
+def get_descriptions(subreddits,sprinkled_subs):
+    subs_sentences = [" "] * len(subreddits)
+    for i,sentence in enumerate(sprinkled_subs):
+        desc, real_sub_name = get_description(subreddits[i])
+        if not subreddits[i] == real_sub_name:
+            sentence = sprinkle_on_subreddits([real_sub_name.split("/")[-1]])[0]
+        subs_sentences[i] = sentence + " " + desc
+    return subs_sentences
 
-categories = list(c)
-subreddits = list(s)
-sprinkled_subs = list(ss)
+def stem_subs(sprinkled_subs):
+    from nltk.stem import PorterStemmer
+    from nltk.tokenize import sent_tokenize, word_tokenize
+    ps = PorterStemmer()
+    stemmed_subs = []
+    for sub in sprinkled_subs:
+        stemmed_sub = ""
+        for word in word_tokenize(sub):
+            stemmed_sub+=" "+ps.stem(word)
+        stemmed_subs.append(stemmed_sub[1:])
+    return stemmed_subs
 
-subs_sentences = [" "] * len(subreddits)
-for i,sentence in enumerate(sprinkled_subs):
-    desc, real_sub_name = get_description(subreddits[i])
-    if not subreddits[i] == real_sub_name:
-        sentence = sprinkle_on_subreddits([real_sub_name.split("/")[-1]])[0]
-    subs_sentences[i] = sentence + " " + desc
+SPINKLED_SUB_KEY = 'sprinkled_subs'
+CATEGORIES_KEY = 'categories'
 
-sprinkled_subs = subs_sentences
+def save_data(path,sprinkled_subs,categories):
+    df = pd.DataFrame({
+        SPINKLED_SUB_KEY:sprinkled_subs,
+        CATEGORIES_KEY:categories
+    })
+    '''
+    h5File = h5py.File(path+'.h5','w')
+    h5File[SPINKLED_SUB_KEY] = df[SPINKLED_SUB_KEY]
+    h5File[CATEGORIES_KEY] = df[CATEGORIES_KEY]
+    h5File.close()
+    ''''
+    df.to_csv(path+'.csv', sep='\t')
 
-from nltk.stem import PorterStemmer
-from nltk.tokenize import sent_tokenize, word_tokenize
-ps = PorterStemmer()
+def load_data(p):
+    #Looks for file with h5 extension
+    # path = p+'.h5'
+    path = p+'.csv'
+    if not os.path.exists(path):
+        return None,None
+    '''
+    h5File = h5py.File(path, 'r')
+    r = list(h5File[SPINKLED_SUB_KEY]),list(h5File[CATEGORIES_KEY])
+    h5File.close()
+    return r
+    ''''
+    df = pd.read_csv(path)
 
-stemmed_subs = []
-for sub in sprinkled_subs:
-    stemmed_sub = ""
-    for word in word_tokenize(sub):
-        stemmed_sub+=" "+ps.stem(word)
-    stemmed_subs.append(stemmed_sub[1:])
+data_path = "sprinkled_subs"
+stemmed_data_path = "sprinkled_subs_stemmed"
 
-sprinkled_subs = stemmed_subs
+#Get necessary data from file if possible
+#If file doesnt exist construct data
+sprinkled_subs,categories = load_data(stemmed_data_path)
+if sprinkled_subs is None:
+    sprinkled_subs,categories = load_data(data_path)
+    if sprinkled_subs is None:
+        #Get Data
+        sprinkled_subs, subreddits, categories = get_spaced_subreddits()
+        categories, subreddits, sprinkled_subs = remove_categories(["Ex 50k+"],categories,subreddits,sprinkled_subs)
+        sprinkled_subs = get_descriptions(subreddits,sprinkled_subs)
+        save_data(data_path,sprinkled_subs,categories)
+
+    #Stem sub
+    sprinkled_subs = stem_subs(sprinkled_subs)
+    save_data(stemmed_data_path,sprinkled_subs,categories)
 
 categories_dict, categories_dict_subs = get_categorized(categories)
 
